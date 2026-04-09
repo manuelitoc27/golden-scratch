@@ -6,15 +6,25 @@
     <title>Golden Scratch - EXOMINE</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { background-color: #0a0a0a; color: #ffffff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
-        h1 { color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.6); margin-bottom: 0; letter-spacing: 2px; }
+        body { background-color: #0a0a0a; color: #ffffff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 10px; margin: 0; }
+        
+        /* Estilos para el Logo */
+        .main-logo {
+            display: block;
+            margin: 20px auto 10px auto; /* Centrado con margen */
+            max-width: 80px; /* Tamaño máximo profesional */
+            height: auto;
+            opacity: 0.9;
+        }
+
+        h1 { color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.6); margin: 0; letter-spacing: 2px; font-size: 28px; }
         .brand { color: #00ffcc; font-size: 14px; font-weight: bold; letter-spacing: 4px; margin-bottom: 25px; text-transform: uppercase; opacity: 0.8; }
         
         .stats-main { background: linear-gradient(180deg, #1a1a1a, #111); padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .stats-main span { color: #00ffcc; font-weight: bold; font-family: 'Courier New', monospace; }
 
-        .bet-selector { margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .bet-btn { background: #222; border: 2px solid #444; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .bet-selector { margin-bottom: 20px; display: flex; justify-content: center; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .bet-btn { background: #222; border: 2px solid #444; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 14px; }
         .bet-btn.active { border-color: #ffcc00; color: #ffcc00; background: #332b00; box-shadow: 0 0 10px rgba(255,204,0,0.2); }
         .custom-bet { background: #222; border: 2px solid #444; color: white; padding: 10px; border-radius: 8px; width: 110px; text-align: center; }
 
@@ -22,19 +32,21 @@
         .result-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
         #canvas-scratch { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; touch-action: none; }
 
-        .btn-play { background: linear-gradient(135deg, #ffcc00, #ff9900); border: none; padding: 15px 50px; font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer; margin: 25px 0; box-shadow: 0 5px 20px rgba(255,153,0,0.4); transition: 0.3s; }
+        .btn-play { background: linear-gradient(135deg, #ffcc00, #ff9900); border: none; padding: 15px 50px; font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer; margin: 25px 0; box-shadow: 0 5px 20px rgba(255,153,0,0.4); transition: 0.3s; width: 100%; max-width: 320px; }
         .btn-play:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,153,0,0.6); }
 
         .history-container { max-width: 400px; margin: 30px auto; background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; }
         .history-table { width: 100%; border-collapse: collapse; }
-        .history-table th { border-bottom: 1px solid #444; padding: 10px; color: #888; font-size: 12px; text-transform: uppercase; }
-        .history-table td { padding: 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
+        .history-table th { border-bottom: 1px solid #444; padding: 10px; color: #888; font-size: 11px; text-transform: uppercase; }
+        .history-table td { padding: 12px; border-bottom: 1px solid #1a1a1a; font-size: 13px; }
         .win-row { color: #00ffcc; font-weight: bold; }
         .consuelo-row { color: #ff9900; }
     </style>
 </head>
 <body>
 
+    <img src="logo.png" alt="Logo EXOMINE" class="main-logo">
+    
     <h1>GOLDEN SCRATCH</h1>
     <div class="brand">CREADO POR EXOMINE</div>
     
@@ -75,6 +87,7 @@
     </div>
 
     <script>
+        // ... (El resto del código JavaScript es idéntico al anterior)
         const canvas = document.getElementById('canvas-scratch');
         const ctx = canvas.getContext('2d');
         const msgRes = document.getElementById('msg-resultado');
