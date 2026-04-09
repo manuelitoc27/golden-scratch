@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Scratch - EXOMINE</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #0a0a0a; color: #ffffff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
+        h1 { color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.6); margin-bottom: 0; letter-spacing: 2px; }
+        .brand { color: #00ffcc; font-size: 14px; font-weight: bold; letter-spacing: 4px; margin-bottom: 25px; text-transform: uppercase; opacity: 0.8; }
+        
+        .stats-main { background: linear-gradient(180deg, #1a1a1a, #111); padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .stats-main span { color: #00ffcc; font-weight: bold; font-family: 'Courier New', monospace; }
+
+        .bet-selector { margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .bet-btn { background: #222; border: 2px solid #444; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .bet-btn.active { border-color: #ffcc00; color: #ffcc00; background: #332b00; box-shadow: 0 0 10px rgba(255,204,0,0.2); }
+        .custom-bet { background: #222; border: 2px solid #444; color: white; padding: 10px; border-radius: 8px; width: 110px; text-align: center; }
+
+        .game-container { position: relative; width: 320px; height: 180px; margin: 0 auto; border: 4px solid #444; border-radius: 15px; overflow: hidden; background: #1a1a1a; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .result-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
+        #canvas-scratch { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; touch-action: none; }
+
+        .btn-play { background: linear-gradient(135deg, #ffcc00, #ff9900); border: none; padding: 15px 50px; font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer; margin: 25px 0; box-shadow: 0 5px 20px rgba(255,153,0,0.4); transition: 0.3s; }
+        .btn-play:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,153,0,0.6); }
+
+        .history-container { max-width: 400px; margin: 30px auto; background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th { border-bottom: 1px solid #444; padding: 10px; color: #888; font-size: 12px; text-transform: uppercase; }
+        .history-table td { padding: 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
+        .win-row { color: #00ffcc; font-weight: bold; }
+        .consuelo-row { color: #ff9900; }
+    </style>
+</head>
+<body>
+
+    <h1>GOLDEN SCRATCH</h1>
+    <div class="brand">CREADO POR EXOMINE</div>
+    
+    <div class="stats-main">
+        SALDO: <span id="saldo-display">1,500,000</span> ORB | 
+        GANADO HOY: <span id="ganancia-sesion">0</span> ORB
+    </div>
+
+    <div class="bet-selector">
+        <button class="bet-btn" onclick="setBet(500, this)">500</button>
+        <button class="bet-btn active" onclick="setBet(1000, this)">1000</button>
+        <button class="bet-btn" onclick="setBet(5000, this)">5000</button>
+        <input type="number" class="custom-bet" id="custom-input" placeholder="ORB" oninput="setCustomBet(this)">
+    </div>
+
+    <div class="game-container">
+        <div class="result-layer">
+            <h2 id="msg-resultado">¡RASPA!</h2>
+            <p id="monto-resultado" style="font-size: 26px; font-weight: bold; margin: 5px;"></p>
+        </div>
+        <canvas id="canvas-scratch" width="320" height="180"></canvas>
+    </div>
+
+    <button class="btn-play" id="play-btn" onclick="nuevoJuego()">PAGAR Y RASPAR</button>
+
+    <div class="history-container">
+        <h3 style="margin-top:0; font-size:16px; color:#ffcc00; text-transform: uppercase;">Últimos Movimientos</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>APUESTA</th>
+                    <th>ESTADO</th>
+                    <th>PREMIO</th>
+                </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas-scratch');
+        const ctx = canvas.getContext('2d');
+        const msgRes = document.getElementById('msg-resultado');
+        const montoRes = document.getElementById('monto-resultado');
+        const saldoDisp = document.getElementById('saldo-display');
+        const gananciaDisp = document.getElementById('ganancia-sesion');
+        const historyBody = document.getElementById('history-body');
+        
+        let isDrawing = false, apuestaActual = 1000, saldoActual = 1500000, gananciaTotalSesion = 0;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Sonido de Pago
+        function playPaySound() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // Sonido de Ganador (Victoria)
+        function playWinSound() {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime + i * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.4);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + i * 0.1);
+                osc.stop(audioCtx.currentTime + i * 0.1 + 0.4);
+            });
+        }
+
+        // Sonido de Raspado
+        function playScratchSound() {
+            const bufferSize = audioCtx.sampleRate * 0.05;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 800;
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.03;
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        function setBet(amount, btn) {
+            apuestaActual = amount;
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('custom-input').value = '';
+        }
+
+        function setCustomBet(input) {
+            let val = parseInt(input.value);
+            if(val >= 500) {
+                apuestaActual = val;
+                document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
+            }
+        }
+
+        function initCanvas() {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#444'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            let grad = ctx.createLinearGradient(0,0,320,180);
+            grad.addColorStop(0, '#888'); grad.addColorStop(0.5, '#fff'); grad.addColorStop(1, '#888');
+            ctx.fillStyle = grad; ctx.globalAlpha = 0.15; ctx.fillRect(0,0,320,180);
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Arial';
+            ctx.fillText('RASPA PARA REVELAR', 80, 95);
+        }
+
+        function nuevoJuego() {
+            if(apuestaActual < 500 || apuestaActual > 500000) { alert("Apuesta fuera de límites"); return; }
+            if(saldoActual < apuestaActual) { alert("Saldo insuficiente"); return; }
+            
+            playPaySound();
+            saldoActual -= apuestaActual;
+            saldoDisp.innerText = saldoActual.toLocaleString();
+            initCanvas();
+            
+            let azar = Math.floor(Math.random() * 100);
+            let resText, premio, isWin;
+
+            // Lógica de probabilidad 25%
+            if (azar < 25) { 
+                isWin = true; resText = "GANADOR"; premio = apuestaActual * 2;
+                msgRes.innerText = "¡PREMIO MAYOR!"; msgRes.style.color = "#00ffcc";
+                setTimeout(playWinSound, 500);
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            } else {
+                isWin = false; resText = "CONSUELO"; premio = Math.floor(apuestaActual * (Math.random() * 0.04 + 0.02));
+                msgRes.innerText = "CONSUELO"; msgRes.style.color = "#ff9900";
+            }
+
+            montoRes.innerText = "+" + premio.toLocaleString() + " ORB";
+            saldoActual += premio;
+            gananciaTotalSesion += premio;
+            saldoDisp.innerText = saldoActual.toLocaleString();
+            gananciaDisp.innerText = gananciaTotalSesion.toLocaleString();
+            
+            const row = document.createElement('tr');
+            row.className = isWin ? 'win-row' : 'consuelo-row';
+            row.innerHTML = `<td>${apuestaActual.toLocaleString()}</td><td>${resText}</td><td>+${premio.toLocaleString()}</td>`;
+            historyBody.prepend(row);
+            if(historyBody.children.length > 5) historyBody.removeChild(historyBody.lastChild);
+        }
+
+        function scratch(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || (e.touches ? e.touches[0].clientX : 0)) - rect.left;
+            const y = (e.clientY || (e.touches ? e.touches[0].clientY : 0)) - rect.top;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+            if(Math.random() > 0.8) playScratchSound();
+        }
+
+        canvas.addEventListener('mousedown', () => isDrawing = true);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mousemove', scratch);
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; e.preventDefault(); });
+        canvas.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
+
+        initCanvas();
+    </script>
+</body>
+</html>
